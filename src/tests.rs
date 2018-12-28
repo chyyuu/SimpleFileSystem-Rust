@@ -1,23 +1,27 @@
-use std::fs::{self, OpenOptions};
-use std::boxed::Box;
-use std::sync::Arc;
-use std::mem::uninitialized;
 use crate::sfs::*;
-use crate::vfs::*;
 use crate::structs::AsBuf;
+use crate::vfs::*;
+use std::boxed::Box;
+use std::fs::{self, OpenOptions};
+use std::mem::uninitialized;
+use std::sync::Arc;
 
 fn _open_sample_file() -> Arc<SimpleFileSystem> {
     fs::copy("sfs.img", "test.img").expect("failed to open sfs.img");
     let file = OpenOptions::new()
-        .read(true).write(true).open("test.img")
+        .read(true)
+        .write(true)
+        .open("test.img")
         .expect("failed to open test.img");
-    SimpleFileSystem::open(Box::new(file))
-        .expect("failed to open SFS")
+    SimpleFileSystem::open(Box::new(file)).expect("failed to open SFS")
 }
 
 fn _create_new_sfs() -> Arc<SimpleFileSystem> {
     let file = OpenOptions::new()
-        .read(true).write(true).create(true).open("test.img")
+        .read(true)
+        .write(true)
+        .create(true)
+        .open("test.img")
         .expect("failed to create file");
     SimpleFileSystem::create(Box::new(file), 32 * 4096)
 }
@@ -40,13 +44,16 @@ fn create_file() -> Result<()> {
     let root = sfs.root_inode();
     let file1 = root.create("file1", FileType::File)?;
 
-    assert_eq!(file1.info()?, FileInfo {
-        size: 0,
-        type_: FileType::File,
-        mode: 0,
-        blocks: 0,
-        nlinks: 1,
-    });
+    assert_eq!(
+        file1.info()?,
+        FileInfo {
+            size: 0,
+            type_: FileType::File,
+            mode: 0,
+            blocks: 0,
+            nlinks: 1,
+        }
+    );
 
     sfs.sync()?;
     Ok(())
@@ -67,7 +74,11 @@ fn resize() -> Result<()> {
     impl AsBuf for [u8; SIZE2] {}
     let len = file1.read_at(0, data1.as_buf_mut())?;
     assert_eq!(len, SIZE1, "wrong size returned by read_at()");
-    assert_eq!(&data1[..SIZE1], &[0u8; SIZE1][..], "expanded data should be 0");
+    assert_eq!(
+        &data1[..SIZE1],
+        &[0u8; SIZE1][..],
+        "expanded data should be 0"
+    );
 
     sfs.sync()?;
     Ok(())
@@ -75,23 +86,23 @@ fn resize() -> Result<()> {
 
 #[test]
 fn resize_on_dir_should_panic() -> Result<()> {
-   let sfs = _create_new_sfs();
-   let root = sfs.root_inode();
-   assert!(root.resize(4096).is_err());
-   sfs.sync()?;
+    let sfs = _create_new_sfs();
+    let root = sfs.root_inode();
+    assert!(root.resize(4096).is_err());
+    sfs.sync()?;
 
-   Ok(())
+    Ok(())
 }
 
 #[test]
 fn resize_too_large_should_panic() -> Result<()> {
-   let sfs = _create_new_sfs();
-   let root = sfs.root_inode();
-   let file1 = root.create("file1", FileType::File)?;
-   assert!(file1.resize(1 << 28).is_err());
-   sfs.sync()?;
+    let sfs = _create_new_sfs();
+    let root = sfs.root_inode();
+    let file1 = root.create("file1", FileType::File)?;
+    assert!(file1.resize(1 << 28).is_err());
+    sfs.sync()?;
 
-   Ok(())
+    Ok(())
 }
 
 #[test]
@@ -102,17 +113,29 @@ fn create_then_lookup() -> Result<()> {
     assert!(Arc::ptr_eq(&root.lookup(".")?, &root), "failed to find .");
     assert!(Arc::ptr_eq(&root.lookup("..")?, &root), "failed to find ..");
 
-    let file1 = root.create("file1", FileType::File)
+    let file1 = root
+        .create("file1", FileType::File)
         .expect("failed to create file1");
-    assert!(Arc::ptr_eq(&root.lookup("file1")?, &file1), "failed to find file1");
+    assert!(
+        Arc::ptr_eq(&root.lookup("file1")?, &file1),
+        "failed to find file1"
+    );
     assert!(root.lookup("file2").is_err(), "found non-existent file");
 
-    let dir1 = root.create("dir1", FileType::Dir)
+    let dir1 = root
+        .create("dir1", FileType::Dir)
         .expect("failed to create dir1");
-    let file2 = dir1.create("file2", FileType::File)
+    let file2 = dir1
+        .create("file2", FileType::File)
         .expect("failed to create /dir1/file2");
-    assert!(Arc::ptr_eq(&root.lookup("dir1/file2")?, &file2), "failed to find dir1/file1");
-    assert!(Arc::ptr_eq(&dir1.lookup("..")?, &root), "failed to find .. from dir1");
+    assert!(
+        Arc::ptr_eq(&root.lookup("dir1/file2")?, &file2),
+        "failed to find dir1/file1"
+    );
+    assert!(
+        Arc::ptr_eq(&dir1.lookup("..")?, &root),
+        "failed to find .. from dir1"
+    );
 
     sfs.sync()?;
     Ok(())

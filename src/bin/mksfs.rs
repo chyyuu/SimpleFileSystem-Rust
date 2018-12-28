@@ -1,10 +1,10 @@
+use simple_filesystem::*;
 use std::env;
 use std::fs;
-use std::io::{Read, Write, Result};
-use std::path::Path;
+use std::io::{Read, Result, Write};
 use std::mem::uninitialized;
+use std::path::Path;
 use std::sync::Arc;
-use simple_filesystem::*;
 
 fn main() -> Result<()> {
     let args: Vec<_> = env::args().collect();
@@ -22,7 +22,11 @@ fn main() -> Result<()> {
 }
 
 fn zip(path: &Path, img_path: &Path) -> Result<()> {
-    let img = fs::OpenOptions::new().read(true).write(true).create(true).open(img_path)?;
+    let img = fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .open(img_path)?;
     let sfs = SimpleFileSystem::create(Box::new(img), 0x1000000);
     let inode = sfs.root_inode();
     zip_dir(path, inode)?;
@@ -38,9 +42,13 @@ fn zip_dir(path: &Path, inode: Arc<INode>) -> Result<()> {
         let name = name_.to_str().unwrap();
         let type_ = entry.file_type()?;
         if type_.is_file() {
-            let inode = inode.create(name, FileType::File).expect("Failed to create INode");
+            let inode = inode
+                .create(name, FileType::File)
+                .expect("Failed to create INode");
             let mut file = fs::File::open(entry.path())?;
-            inode.resize(file.metadata().unwrap().len() as usize).expect("Failed to resize INode");
+            inode
+                .resize(file.metadata().unwrap().len() as usize)
+                .expect("Failed to resize INode");
             let mut buf: [u8; 4096] = unsafe { uninitialized() };
             let mut offset = 0usize;
             let mut len = 4096;
@@ -50,7 +58,9 @@ fn zip_dir(path: &Path, inode: Arc<INode>) -> Result<()> {
                 offset += len;
             }
         } else if type_.is_dir() {
-            let inode = inode.create(name, FileType::Dir).expect("Failed to create INode");
+            let inode = inode
+                .create(name, FileType::Dir)
+                .expect("Failed to create INode");
             zip_dir(entry.path().as_path(), inode)?;
         }
     }
@@ -79,7 +89,9 @@ fn unzip_dir(path: &Path, inode: Arc<INode>) -> Result<()> {
                 let mut offset = 0usize;
                 let mut len = 4096;
                 while len == 4096 {
-                    len = inode.read_at(offset, buf.as_mut()).expect("Failed to read from INode");
+                    len = inode
+                        .read_at(offset, buf.as_mut())
+                        .expect("Failed to read from INode");
                     file.write(&buf[..len])?;
                     offset += len;
                 }

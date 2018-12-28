@@ -1,4 +1,4 @@
-use alloc::{vec::Vec, string::String, sync::Arc};
+use alloc::{string::String, sync::Arc, vec::Vec};
 use core::any::Any;
 use core::result;
 
@@ -44,9 +44,7 @@ impl INode {
         if info.type_ != FileType::Dir {
             return Err(FsError::NotDir);
         }
-        (0..info.size).map(|i| {
-            self.get_entry(i)
-        }).collect()
+        (0..info.size).map(|i| self.get_entry(i)).collect()
     }
     pub fn lookup(&self, path: &str) -> Result<Arc<INode>> {
         if self.info()?.type_ != FileType::Dir {
@@ -55,7 +53,7 @@ impl INode {
         let mut result = self.find(".")?;
         let mut rest_path = path;
         while rest_path != "" {
-            if result.info()?.type_!= FileType::Dir {
+            if result.info()?.type_ != FileType::Dir {
                 return Err(FsError::NotDir);
             }
             let name;
@@ -106,27 +104,27 @@ pub struct FsInfo {
 //       We also panic when we can not parse the fs on disk normally
 #[derive(Debug)]
 pub enum FsError {
-    NotSupported,//E_UNIMP, or E_INVAL
-    NotFile,//E_ISDIR
-    IsDir,//E_ISDIR, used only in link
-    NotDir,//E_NOTDIR
-    EntryNotFound,//E_NOENT
-    EntryExist,//E_EXIST
-    NotSameFs,//E_XDEV
-    InvalidParam,//E_INVAL
-    NoDeviceSpace,//E_NOSPC, but is defined and not used in the original ucore, which uses E_NO_MEM
-    DirRemoved,//E_NOENT, when the current dir was remove by a previous unlink
-    DirNotEmpty,//E_NOTEMPTY
-    WrongFs,//E_INVAL, when we find the content on disk is wrong when opening the device
+    NotSupported,  //E_UNIMP, or E_INVAL
+    NotFile,       //E_ISDIR
+    IsDir,         //E_ISDIR, used only in link
+    NotDir,        //E_NOTDIR
+    EntryNotFound, //E_NOENT
+    EntryExist,    //E_EXIST
+    NotSameFs,     //E_XDEV
+    InvalidParam,  //E_INVAL
+    NoDeviceSpace, //E_NOSPC, but is defined and not used in the original ucore, which uses E_NO_MEM
+    DirRemoved,    //E_NOENT, when the current dir was remove by a previous unlink
+    DirNotEmpty,   //E_NOTEMPTY
+    WrongFs,       //E_INVAL, when we find the content on disk is wrong when opening the device
 }
 
-pub type Result<T> = result::Result<T,FsError>;
+pub type Result<T> = result::Result<T, FsError>;
 
 /// Abstract filesystem
 pub trait FileSystem: Sync {
     fn sync(&self) -> Result<()>;
     fn root_inode(&self) -> Arc<INode>;
     fn info(&self) -> &'static FsInfo;
-//    fn unmount(&self) -> Result<()>;
-//    fn cleanup(&self);
+    //    fn unmount(&self) -> Result<()>;
+    //    fn cleanup(&self);
 }

@@ -10,7 +10,9 @@ pub trait BlockedDevice: Send {
 
 macro_rules! try0 {
     ($len:expr, $res:expr) => {
-        if !$res {return Some($len);}
+        if !$res {
+            return Some($len);
+        }
     };
 }
 
@@ -35,7 +37,10 @@ impl<T: BlockedDevice> Device for T {
                 let mut block_buf: [u8; 4096] = unsafe { uninitialized() };
                 assert!(Self::BLOCK_SIZE_LOG2 <= 12);
                 // Read to local buf first
-                try0!(len, BlockedDevice::read_at(self, range.block, &mut block_buf));
+                try0!(
+                    len,
+                    BlockedDevice::read_at(self, range.block, &mut block_buf)
+                );
                 // Copy to target buf then
                 buf.copy_from_slice(&mut block_buf[range.begin..range.end]);
             }
@@ -62,7 +67,10 @@ impl<T: BlockedDevice> Device for T {
                 let mut block_buf: [u8; 4096] = unsafe { uninitialized() };
                 assert!(Self::BLOCK_SIZE_LOG2 <= 12);
                 // Read to local buf first
-                try0!(len, BlockedDevice::read_at(self, range.block, &mut block_buf));
+                try0!(
+                    len,
+                    BlockedDevice::read_at(self, range.block, &mut block_buf)
+                );
                 // Write to local buf
                 block_buf[range.begin..range.end].copy_from_slice(buf);
                 // Write back to target buf
